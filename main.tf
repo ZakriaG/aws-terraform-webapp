@@ -4,13 +4,13 @@ terraform {
   ## YOU WILL UNCOMMENT THIS CODE THEN RERUN TERRAFORM INIT
   ## TO SWITCH FROM LOCAL BACKEND TO REMOTE AWS BACKEND
   #############################################################
-  backend "s3" {
-    bucket         = "devops-directive-tf-state"
-    key            = "03-basics/web-app/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "terraform-state-locking"
-    encrypt        = true
-  }
+#  backend "s3" {
+#    bucket         = "devops-directive-tf-state"
+#    key            = "03-basics/web-app/terraform.tfstate"
+#    region         = "us-east-1"
+#    dynamodb_table = "terraform-state-locking"
+#    encrypt        = true
+#  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -57,23 +57,26 @@ resource "aws_dynamodb_table" "terraform_locks" {
 
 # Instances to run the django web app:
 resource "aws_instance" "django_app_instance_1" {
-  ami             = "ami-065ab11fbd3d0323d" # Amazon Linux 2023
+  ami             = "ami-0fb820135757d28fd" # Amazon Linux 2023
   instance_type   = "t2.micro"
   security_groups = [aws_security_group.instances.name]
   user_data       = <<-EOF
               #!/bin/bash
-              echo "Hello, World 1" > index.html
-              python3 -m http.server 8080 &
+              wget https://github.com/ZakriaG/FitnessLog/archive/refs/heads/main.zip
+              unzip main.zip
+              sudo yum -y install python-pip
+              export HOST_IP="$(curl ifconfig.me)"
+              python3 manage.py runserver 0.0.0.0:8080
               EOF
 }
 
-resource "aws_instance" "django-app-instance_2" {
-  ami             = "ami-065ab11fbd3d0323d" # Amazon Linux 2023
+resource "aws_instance" "django_app_instance_2" {
+  ami             = "ami-0fb820135757d28fd" # Amazon Linux 2023
   instance_type   = "t2.micro"
   security_groups = [aws_security_group.instances.name]
   user_data       = <<-EOF
               #!/bin/bash
-              echo "Hello, World 2" > index.html
+              echo "Django Instance 2" > index.html
               python3 -m http.server 8080 &
               EOF
 }
@@ -167,7 +170,7 @@ resource "aws_lb_listener_rule" "django_instances" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.django_instances.arn
+    target_group_arn = aws_lb_target_group.instances.arn
   }
 }
 
@@ -208,19 +211,19 @@ resource "aws_lb" "load_balancer" {
 
 }
 
-resource "aws_route53_zone" "primary" {
-  name = "devopsdeployed.com"
-}
-
-resource "aws_route53_record" "root" {
-  zone_id = aws_route53_zone.primary.zone_id
-  name    = "devopsdeployed.com"
-  type    = "A"
-
-  alias {
-    name                   = aws_lb.load_balancer.dns_name
-    zone_id                = aws_lb.load_balancer.zone_id
-    evaluate_target_health = true
-  }
-}
-
+#resource "aws_route53_zone" "primary" {
+#  name = "example.com"
+#}
+#
+#resource "aws_route53_record" "root" {
+#  zone_id = aws_route53_zone.primary.zone_id
+#  name    = "example.com"
+#  type    = "A"
+#
+#  alias {
+#    name                   = aws_lb.load_balancer.dns_name
+#    zone_id                = aws_lb.load_balancer.zone_id
+#    evaluate_target_health = true
+#  }
+#}
+#
