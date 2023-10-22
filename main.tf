@@ -62,11 +62,13 @@ resource "aws_instance" "django_app_instance_1" {
   security_groups = [aws_security_group.instances.name]
   user_data       = <<-EOF
               #!/bin/bash
+              sudo yum -y install python-pip
               wget https://github.com/ZakriaG/FitnessLog/archive/refs/heads/main.zip
               unzip main.zip
-              sudo yum -y install python-pip
-              export HOST_IP="$(curl ifconfig.me)"
-              python3 manage.py runserver 0.0.0.0:8080
+              cd FitnessLog-main
+              pip install -r requirements.txt -I
+              export HOST_IP="$(hostname -I | tr -d ' \t\n\r')"
+              python3 manage.py runserver 0.0.0.0:8000
               EOF
 }
 
@@ -76,8 +78,13 @@ resource "aws_instance" "django_app_instance_2" {
   security_groups = [aws_security_group.instances.name]
   user_data       = <<-EOF
               #!/bin/bash
-              echo "Django Instance 2" > index.html
-              python3 -m http.server 8080 &
+              sudo yum -y install python-pip
+              wget https://github.com/ZakriaG/FitnessLog/archive/refs/heads/main.zip
+              unzip main.zip
+              cd FitnessLog-main
+              pip install -r requirements.txt -I
+              export HOST_IP="$(hostname -I | tr -d ' \t\n\r')"
+              python3 manage.py runserver 0.0.0.0:8000
               EOF
 }
 
@@ -96,14 +103,25 @@ resource "aws_security_group" "instances" {
   name = "instance-security-group"
 }
 
-# Security Group Rules
+# EC2 Security Group Rules:
 resource "aws_security_group_rule" "allow_http_inbound" {
   type              = "ingress"
   security_group_id = aws_security_group.instances.id
 
-  from_port   = 8080
-  to_port     = 8080
+  from_port   = 8000
+  to_port     = 8000
   protocol    = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+resource "aws_security_group_rule" "allow_http_outbound" {
+  # If the EC2 needs to download from the internet.
+  # In this project it needs to download python packages and a Git repository.
+  type              = "egress"
+  security_group_id = aws_security_group.instances.id
+
+  from_port   = 0
+  to_port     = 0
+  protocol    = "-1"
   cidr_blocks = ["0.0.0.0/0"]
 }
 
@@ -131,7 +149,7 @@ resource "aws_lb_listener" "http" {
 
 resource "aws_lb_target_group" "instances" {
   name     = "example-target-group"
-  port     = 8080
+  port     = 8000
   protocol = "HTTP"
   vpc_id   = data.aws_vpc.default_vpc.id
 
@@ -149,13 +167,13 @@ resource "aws_lb_target_group" "instances" {
 resource "aws_lb_target_group_attachment" "django_instance_1" {
   target_group_arn = aws_lb_target_group.instances.arn
   target_id        = aws_instance.django_app_instance_1.id
-  port             = 8080
+  port             = 8000
 }
 
 resource "aws_lb_target_group_attachment" "django_instance_2" {
   target_group_arn = aws_lb_target_group.instances.arn
   target_id        = aws_instance.django_app_instance_2.id
-  port             = 8080
+  port             = 8000
 }
 
 resource "aws_lb_listener_rule" "django_instances" {
@@ -188,8 +206,8 @@ resource "aws_security_group_rule" "allow_alb_http_inbound" {
   to_port     = 80
   protocol    = "tcp"
   cidr_blocks = ["0.0.0.0/0"]
-
 }
+
 # Outbound Rules:
 resource "aws_security_group_rule" "allow_alb_all_outbound" {
   type              = "egress"
