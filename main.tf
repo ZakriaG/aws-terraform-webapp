@@ -4,13 +4,13 @@ terraform {
   ## YOU WILL UNCOMMENT THIS CODE THEN RERUN TERRAFORM INIT
   ## TO SWITCH FROM LOCAL BACKEND TO REMOTE AWS BACKEND
   #############################################################
-#  backend "s3" {
-#    bucket         = "devops-directive-tf-state"
-#    key            = "03-basics/web-app/terraform.tfstate"
-#    region         = "us-east-1"
-#    dynamodb_table = "terraform-state-locking"
-#    encrypt        = true
-#  }
+  #  backend "s3" {
+  #    bucket         = "django-tf-state"
+  #    key            = "/django/terraform.tfstate"
+  #    region         = var.region
+  #    dynamodb_table = "terraform-state-locking"
+  #    encrypt        = true
+  #  }
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -20,7 +20,7 @@ terraform {
 }
 
 provider "aws" {
-  region = "eu-central-1" # Change accordingly
+  region = var.region
 }
 
 # Bucket to store the Terraform state file:
@@ -37,7 +37,7 @@ resource "aws_s3_bucket_versioning" "terraform_bucket_versioning" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "terraform_state_crypto_conf" {
-  bucket        = aws_s3_bucket.terraform_state.bucket
+  bucket = aws_s3_bucket.terraform_state.bucket
   rule {
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
@@ -57,8 +57,8 @@ resource "aws_dynamodb_table" "terraform_locks" {
 
 # Instances to run the django web app:
 resource "aws_instance" "django_app_instance_1" {
-  ami             = "ami-0fb820135757d28fd" # Amazon Linux 2023
-  instance_type   = "t2.micro"
+  ami             = var.ami
+  instance_type   = var.instance_type
   security_groups = [aws_security_group.instances.name]
   user_data       = <<-EOF
               #!/bin/bash
@@ -73,8 +73,8 @@ resource "aws_instance" "django_app_instance_1" {
 }
 
 resource "aws_instance" "django_app_instance_2" {
-  ami             = "ami-0fb820135757d28fd" # Amazon Linux 2023
-  instance_type   = "t2.micro"
+  ami             = var.ami
+  instance_type   = var.instance_type
   security_groups = [aws_security_group.instances.name]
   user_data       = <<-EOF
               #!/bin/bash
@@ -86,6 +86,15 @@ resource "aws_instance" "django_app_instance_2" {
               export HOST_IP="$(hostname -I | tr -d ' \t\n\r')"
               python3 manage.py runserver 0.0.0.0:8000
               EOF
+  #############################################################
+  ## To demonstrate the second instance is used by the
+  ## load balancer uncomment the following:
+  #############################################################
+  #  user_data       = <<-EOF
+  #              #!/bin/bash
+  #              echo "EC2 instance 2!" > index.html
+  #              python3 -m http.server 8000 &
+  #              EOF
 }
 
 # Virtual Private Cloud:
