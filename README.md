@@ -32,6 +32,15 @@ terraform plan
 ```
 
 ### 5. Apply the Infrastructure
+Once the load balancer is set up and the application is deployed, 
+you can access the web-app
+through the load balancer's DNS name. 
+Simply open a web browser and enter the DNS name.
+
+For example, if your load balancer DNS name 
+is my-load-balancer-1234567890.us-west-2.elb.amazonaws.com,
+you would enter this address in your web browser to 
+access the web-app.
 ```bash
 terraform apply
 ```
