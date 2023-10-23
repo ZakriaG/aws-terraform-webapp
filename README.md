@@ -14,8 +14,8 @@ Before proceeding, ensure you have the required AWS credentials and Terraform in
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url>
-cd <repository-directory>
+git clone https://github.com/ZakriaG/aws-terraform-webapp.git
+cd aws-terraform-webapp
 ```
 
 ### 2. Initialize Terraform
