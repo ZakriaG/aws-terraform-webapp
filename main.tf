@@ -55,12 +55,9 @@ resource "aws_dynamodb_table" "terraform_locks" {
   }
 }
 
-# Instances to run the django web app:
-resource "aws_instance" "django_app_instance_1" {
-  ami             = var.ami
-  instance_type   = var.instance_type
-  security_groups = [aws_security_group.instances.name]
-  user_data       = <<-EOF
+# Define user data script as a variable
+variable "user_data_script" {
+  default = <<-EOF
               #!/bin/bash
               sudo yum -y install python-pip
               wget https://github.com/ZakriaG/FitnessLog/archive/refs/heads/main.zip
@@ -72,20 +69,18 @@ resource "aws_instance" "django_app_instance_1" {
               EOF
 }
 
-resource "aws_instance" "django_app_instance_2" {
+# Instances to run the django web app:
+resource "aws_instance" "django_app_instance" {
+  count           = 2
   ami             = var.ami
   instance_type   = var.instance_type
   security_groups = [aws_security_group.instances.name]
-  user_data       = <<-EOF
-              #!/bin/bash
-              sudo yum -y install python-pip
-              wget https://github.com/ZakriaG/FitnessLog/archive/refs/heads/main.zip
-              unzip main.zip
-              cd FitnessLog-main
-              pip install -r requirements.txt -I
-              export HOST_IP="$(hostname -I | tr -d ' \t\n\r')"
-              python3 manage.py runserver 0.0.0.0:8000
-              EOF
+  user_data       = var.user_data_script
+  tags = {
+    Name = "django_app_instance_${count.index + 1}"
+  }
+}
+
   #############################################################
   ## To demonstrate the second instance is used by the
   ## load balancer uncomment the following:
