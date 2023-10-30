@@ -170,13 +170,13 @@ resource "aws_lb_target_group" "instances" {
 
 resource "aws_lb_target_group_attachment" "django_instance_1" {
   target_group_arn = aws_lb_target_group.instances.arn
-  target_id        = aws_instance.django_app_instance_1.id
+  target_id        = aws_instance.django_app_instance[0].id
   port             = 8000
 }
 
 resource "aws_lb_target_group_attachment" "django_instance_2" {
   target_group_arn = aws_lb_target_group.instances.arn
-  target_id        = aws_instance.django_app_instance_2.id
+  target_id        = aws_instance.django_app_instance[1].id
   port             = 8000
 }
 
