@@ -90,7 +90,6 @@ resource "aws_instance" "django_app_instance" {
   #              echo "EC2 instance 2!" > index.html
   #              python3 -m http.server 8000 &
   #              EOF
-}
 
 # Virtual Private Cloud:
 data "aws_vpc" "default_vpc" {
